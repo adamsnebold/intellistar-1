@@ -1,6 +1,6 @@
 var api_key = 'e1f10a1e78da46f5b10a1e78da96f525';
-var map_key = 'pk.eyJ1Ijoic3RpbGxub3RicmFuZG9uIiwiYSI6ImNtY28xbjh0ZTBkbnMya29lMTZka21jNzkifQ.i-6ROmH9NyOfrtpLvWuJ2w';
-var traf_key = 'cJG5MpqFVuqA6VfHYFcDxz2NoQOmmBVG';
+var map_key = 'YOUR_MAP_KEY';
+var traf_key = 'YOUR_TRAFFIC_KEY';
 
 var appearanceSettings = {
     marqueeAd: [
