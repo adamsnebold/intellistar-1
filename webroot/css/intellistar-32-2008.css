@@ -807,7 +807,7 @@
 .almanac .almdate {
     position: absolute;
     color: inherit;
-    width: 300px;
+    white-space: nowrap;
 }
 .almanac .bottomheader .high {
     position: absolute;
