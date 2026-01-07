@@ -15,6 +15,7 @@ function vocallocalCC(){
 
     //COND
     var condi = codeToCurrent[weatherInfo.currentConditions.icon].narration;
+    console.log("THE MISSING FILE IS:", condi);
     var condit = condPath + condi + '.wav'
     narrationArr.push(condit)
 
