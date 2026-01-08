@@ -1,5 +1,5 @@
 var api_key = 'e1f10a1e78da46f5b10a1e78da96f525';
-var map_key = 'YOUR_MAP_KEY';
+var map_key = 'pk.eyJ1IjoiYWRhbXNuZWJvbGQiLCJhIjoiY21rNTZxNmg3MGdwdTNsb3UyOXQ4anhtayJ9.-z9siKe5Zk5tN-6Y8r0ibA';
 var traf_key = 'YOUR_TRAFFIC_KEY';
 
 var appearanceSettings = {
