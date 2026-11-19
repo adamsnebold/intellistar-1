@@ -3,10 +3,7 @@ document.addEventListener('DOMContentLoaded', async () =>{
     $("#settings-menu .version").text(`v${appearanceSettings.version}`);
     $("#settings-menu .flavortext").text("Flavor: " + slideSettings.flavor + "s");
     $("#settings-menu .versionstext").text("Version: " + appearanceSettings.graphicsPackage);
-    if(appearanceSettings.graphicsPackage == 2010 || appearanceSettings.graphicsPackage == "2010"){
-        appearanceSettings.iconSet = "2010";
-    }
-    versionsChanger(appearanceSettings.graphicsPackage);
+    await versionsChanger(appearanceSettings.graphicsPackage);
     await preloadFonts();
     await preloadImages();
     $.getJSON("https://mistwx.com/crawlnetwork.json", function(data){
@@ -160,6 +157,10 @@ function onLocationInit(){
 }
 
 async function startProgram() {
+    if (!map_key) {
+        alert('Radar needs a Mapbox public access token. Set MAPBOX_ACCESS_TOKEN in .env, restart npm start, and reload this page.');
+        return;
+    }
     inSettings = false;
     $("#map-interactive-settings").css('pointer-events', 'none')
     $("#settings-menu").fadeOut(0);
@@ -214,6 +215,8 @@ function flavorChanger(flv){
  * @returns 
  */
 function flavorPicker(time, modes) {
+    // The regional package has its own fixed product order and ignores the 60/90/120 lists.
+    if (document.documentElement.dataset.package === '2005-regional') return regionalFlavor;
     if(slideSettings.auto == false){return slideSettings;}
     if(time == '') time = '120';
     if(modes.bulletin == undefined) modes.bulletin = false;
@@ -234,41 +237,6 @@ function locationSearch(id){
             onLocationInit();
         }, 1000);
     });
-}
-
-function versionsChanger(version){
-    appearanceSettings.graphicsPackage = version;
-    let versionHex;
-    $(".versionstext").text("Version: " + version);
-    switch(version){
-        case 2007:
-            appearanceSettings.iconSet = '2007';
-            versionHex = "#304976";
-            $('.changecolor').css('color', versionHex);
-            break;
-        case 2008:
-            appearanceSettings.iconSet = '2007';
-            versionHex = "#171717";
-            $('.changecolor').css('color', versionHex);
-            break;
-        case 2009:
-            appearanceSettings.iconSet = '2007';
-            versionHex = "#171717";
-            $('.changecolor').css('color', versionHex);
-            break;
-        case 2010:
-            appearanceSettings.iconSet = '2010';
-            version = 2009;
-            versionHex = "#171717";
-            $('.changecolor').css('color', versionHex);
-            break;
-        default:
-            break;
-    }
-    $("#styles").append(`<link rel="stylesheet" href="css/intellistar-32-${version}.css">`)
-    setTimeout(() => {
-        $("#styles").children('link').first().remove();
-    }, 10);
 }
 
 function ldlChanger(type){
@@ -592,7 +560,8 @@ function mapSettings(){
                     }else{
                         document.querySelector('option[value="add"]').remove();
                     }
-                    $(".map-cities").append(`<div class="city ${mapDivs[locationConfig.regionalMap.map.length-1]} selected" style="left: 720px; top: 430px;"><div class="city-name">City Name</div><div class="temp">88</div><div class="icon" style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;"></div></div>`)
+                    $(".map-cities").append(`<div class="city ${mapDivs[locationConfig.regionalMap.map.length-1]} selected" style="left: 720px; top: 430px;"><div class="city-name">City Name</div><div class="temp">88</div><div class="icon" data-icon-file="Ts" data-icon-size="large" style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;"></div></div>`)
+                    refreshWeatherIcons();
                     $(".city-properties").fadeIn(0);
                     $(".city-properties .city-name").text("City Name:");
                     document.getElementById("cityleftvalue").value = 720;

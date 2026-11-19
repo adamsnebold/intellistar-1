@@ -363,17 +363,46 @@ button#flavor120{
 button#flavormore{
     left: 610px;
 }
+#settings-menu .versionstext {
+    font-size: 32px;
+    top: 56px;
+    white-space: nowrap;
+}
+.versionsbutton div {
+    white-space: nowrap;
+}
+/* Version row: the label occupies the left; six buttons share the rest. */
+button#versions2005 {
+    left: 300px;
+    width: 190px;
+    font-size: 26px;
+}
+button#versions2005-regional {
+    left: 500px;
+    width: 190px;
+    font-size: 26px;
+}
+.versionsbutton[aria-pressed="true"] {
+    outline: 3px solid #79baf2;
+}
+.versionsbutton:focus-visible {
+    outline: 3px solid #fff;
+}
 button#versions2007 {
-    left: 375px;
+    left: 705px;
+    width: 125px;
 }
 button#versions2008 {
-    left: 520px;
+    left: 845px;
+    width: 125px;
 }
 button#versions2009 {
-    left: 665px;
+    left: 985px;
+    width: 125px;
 }
 button#versions2010 {
-    left: 810px;
+    left: 1125px;
+    width: 125px;
 }
 #flavormore div {
     margin-top: -15px;
@@ -763,4 +792,31 @@ button#search-c div {
 .radar-city .dot-outline {
     background-image: url(images/radar/locatorDotOutline.png);
     background-size: 100% 100%;
+}
+/* Keep source alert text intact so theme changes can restore mixed case. */
+.ldl-black .alertcrawl {
+    text-transform: uppercase;
+}
+
+/* Era-specific title lettering; later packages retain their original labels. */
+.theme-title-retro {
+    display: none;
+}
+
+/* Respect the title state even if an older era stylesheet is still in memory. */
+.theme-title-default[hidden],
+.theme-title-retro[hidden] {
+    display: none !important;
+}
+
+/* Keep each live radar stack together during the synchronized regional/local handoff.
+   The banner and LDL stay above both groups; no map or theme colors change. */
+.radar .radar-group {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1620px;
+    height: 1080px;
+    isolation: isolate;
+    z-index: 0;
 }

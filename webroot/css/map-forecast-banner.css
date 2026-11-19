@@ -1,0 +1,63 @@
+/* Regional map titles only, for 2005–06. Match the approved monochrome radar
+   banner without changing the map, city labels, timing, or later packages. */
+html[data-theme="2005-2006"] #main .slides > .map > .box {
+    display: none;
+}
+html[data-theme="2005-2006"] #main .slides > .map > .header {
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    color: transparent;
+    text-shadow: none;
+    font-size: 0;
+    letter-spacing: 0;
+    white-space: nowrap;
+    isolation: isolate;
+}
+html[data-theme="2005-2006"] #main .map .map-title-lead,
+html[data-theme="2005-2006"] #main .map .map-title-tail {
+    position: relative;
+    display: inline-block;
+    vertical-align: top;
+    height: 98px;
+    font: 84px/94px "Interstate Bold", Arial, sans-serif;
+    letter-spacing: 1px;
+    isolation: isolate;
+}
+html[data-theme="2005-2006"] #main .map .map-title-lead {
+    padding: 0 14px;
+    color: #f2f3e9;
+    text-shadow: 1px 2px 1px rgba(0, 0, 0, .75);
+}
+html[data-theme="2005-2006"] #main .map .map-title-lead::before {
+    content: "";
+    position: absolute;
+    inset: -66px 0 0;
+    z-index: -1;
+    box-sizing: border-box;
+    background: rgba(5, 12, 6, .76);
+    border-left: 3px solid rgba(237, 241, 226, .65);
+    border-right: 3px solid rgba(237, 241, 226, .9);
+    border-bottom: 3px solid rgba(237, 241, 226, .9);
+    pointer-events: none;
+}
+html[data-theme="2005-2006"] #main .map .map-title-tail {
+    padding-left: 10px;
+    color: #10150e;
+    text-shadow: 0 1px 1px rgba(245, 246, 232, .45);
+}
+html[data-theme="2005-2006"] #main .map .map-title-tail::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: -66px;
+    height: 164px;
+    width: 1512px;
+    z-index: -1;
+    box-sizing: border-box;
+    background: linear-gradient(180deg, rgba(234, 237, 226, .08), rgba(239, 241, 232, .48) 58%, rgba(239, 241, 232, .83));
+    mask-image: linear-gradient(90deg, #000 45%, rgba(0, 0, 0, .4));
+    border-bottom: 3px solid rgba(240, 242, 231, .9);
+    pointer-events: none;
+}

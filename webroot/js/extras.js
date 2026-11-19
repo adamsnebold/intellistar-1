@@ -877,33 +877,16 @@ function numToWord(num) {
 }
 
 function getIcon(div, iconCode, type, size) {
-    //"large", "medium", "small", or "map"
-    if (iconCode == "blank" || iconCode == null) {
-        div.css({ "background-image": "url(images/icons/blank.apng)", "background-size": "100% 100%" })
-    } else {
-        var sizepath = ""
-        if (size == "large") {
-            sizepath = "large/"
-        } else if (size == "medium") {
-            sizepath = "medium/"
-        } else if (size == "small") {
-            sizepath = "small/"
-        } else if (sizepath == "map") {
-            sizepath = "map/"
-        } else if (sizepath == undefined) {
-            sizepath = "large/"
-        } else {
-            sizepath = "large/"
-        }
-        if (type == "current") {
-            div.css({ "background-image": "url(images/icons/" + appearanceSettings.iconSet + "/" + sizepath + codeToCurrent[iconCode].iconFile + ".webp)", "background-size": "100% 100%" })
-        } else if (type == "forecast") {
-            div.css({ "background-image": "url(images/icons/" + appearanceSettings.iconSet + "/" + sizepath + codetoFcst[iconCode].iconFile + ".webp)", "background-size": "100% 100%" })
-        } else if (type == "ldl") {
-            div.css({ "background-image": "url(images/icons/" + appearanceSettings.iconSet + "/stills/" + codeToCurrent[iconCode].iconFile + ".mv.png)", "background-size": "100% 100%" })
-        }
-    }
+    const table = type === "forecast" ? codetoFcst : codeToCurrent;
+    const entry = iconCode == null || iconCode === "blank" ? null : table[iconCode];
+    // Unknown/missing weather codes must not interrupt the slide or data loop.
+    div.each(function () {
+        this.dataset.iconFile = entry ? entry.iconFile : "blank";
+        this.dataset.iconSize = type === "ldl" ? "stills" : (size || "large");
+        renderWeatherIcon(this);
+    });
 }
+
 function getCond(iconCode, type) {
     if (type == "current") {
         return codeToCurrent[iconCode].textModifier
@@ -1406,7 +1389,7 @@ var slideFlavors = {
             order: [
                 {function:"currentConditions",slideDelay:8000},
                 {function:"radarDoppler",slideDelay:8000},
-                {function:"localDoppler",slideDelay:12000},
+                {function:"localDoppler",slideDelay:8000},
                 {function:"daypartForecast",slideDelay:8000},
                 {function:"mapForecast",slides:2,slideDelay:8000},
                 {function:"weekAhead",slideDelay:8000},
@@ -1419,7 +1402,7 @@ var slideFlavors = {
             order: [
                 {function:"currentConditions",slideDelay:8000},
                 {function:"radarDoppler",slideDelay:8000},
-                {function:"localDoppler",slideDelay:12000},
+                {function:"localDoppler",slideDelay:8000},
                 {function:"localForecast",slides:3,slideDelay:8000},
                 {function:"weekAhead",slideDelay:8000},
             ]
@@ -1445,7 +1428,7 @@ var slideFlavors = {
                 {function:"bulletin",slideDelay:8000},
                 {function:"currentConditions",slideDelay:8000},
                 {function:"radarDoppler",slideDelay:8000},
-                {function:"localDoppler",slideDelay:12000},
+                {function:"localDoppler",slideDelay:8000},
                 {function:"daypartForecast",slideDelay:8000},
                 {function:"mapForecast",slides:1,slideDelay:8000},
                 {function:"weekAhead",slideDelay:8000},
@@ -1522,7 +1505,7 @@ var slideFlavors = {
                 {function:"currentConditions",slideDelay:8000},
                 {function:"nearbyCities",slides:2,slideDelay:6000},
                 {function:"radarDoppler",slideDelay:8000},
-                {function:"localDoppler",slideDelay:12000},
+                {function:"localDoppler",slideDelay:8000},
                 {function:"almanac",slideDelay:8000},
                 {function:"mapForecast",slideDelay:8000},
                 {function:"localForecast",slides:3,slideDelay:8666},
@@ -1539,7 +1522,7 @@ var slideFlavors = {
                 {function:"currentConditions",slideDelay:8000},
                 {function:"mapCurrent",slideDelay:8000},
                 {function:"radarDoppler",slideDelay:8000},
-                {function:"localDoppler",slideDelay:12000},
+                {function:"localDoppler",slideDelay:8000},
                 {function:"daypartForecast",slideDelay:8000},
                 {function:"localForecast",slides:4,slideDelay:7500},
                 {function:"weekAhead",slideDelay:8000}
@@ -1592,7 +1575,7 @@ var slideFlavors = {
                 {function:"currentConditions",slideDelay:8000},
                 {function:"nearbyCities",slides:2,slideDelay:6000},
                 {function:"radarDoppler",slideDelay:8000},
-                {function:"localDoppler",slideDelay:12000},
+                {function:"localDoppler",slideDelay:8000},
                 {function:"almanac",slideDelay:8000},
                 {function:"airQuality",slideDelay:8000},
                 {function:"daypartForecast",slideDelay:8000},
@@ -1610,7 +1593,7 @@ var slideFlavors = {
                 {function:"currentConditions",slideDelay:8000},
                 {function:"nearbyCities",slides:2,slideDelay:6000},
                 {function:"radarDoppler",slideDelay:8000},
-                {function:"localDoppler",slideDelay:12000},
+                {function:"localDoppler",slideDelay:8000},
                 {function:"almanac",slideDelay:8000},
                 {function:"airQuality",slideDelay:8000},
                 {function:"daypartForecast",slideDelay:8000},

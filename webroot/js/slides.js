@@ -31,22 +31,92 @@ var currentProgram;
 var currentDiv;
 var idx = 0, nidx = 1;
 
+// Slide-owned callbacks cannot leak into the next product or extend radar playback.
+const slideTimers = new Set();
+const slideCleanups = new Set();
+let slideEpoch = 0;
+function slideSchedule(callback, delay) {
+    const epoch = slideEpoch;
+    const timer = setTimeout(() => {
+        slideTimers.delete(timer);
+        if (epoch === slideEpoch) callback();
+    }, Math.max(0, Number(delay) || 0));
+    slideTimers.add(timer);
+    return timer;
+}
+function clearSlideTimers() {
+    slideEpoch++;
+    for (const timer of slideTimers) clearTimeout(timer);
+    slideTimers.clear();
+    for (const cleanup of slideCleanups) cleanup();
+    slideCleanups.clear();
+}
+// Product changes are broadcast-style switches, not opacity dissolves. DOM
+// changes in the same task are painted together, retaining the authored inner
+// title/panel animations without blending two different products on screen.
+function showSlide(selector) {
+    $(selector).stop(true, false).css('opacity', '').show();
+}
+function hideSlide(selector) {
+    $(selector).stop(true, false).hide().css('opacity', '');
+}
+
+// Keep the outgoing radar intact until the incoming canvas has actually painted
+// a complete frame. The title and entire map stack then switch together.
+function radarHandoff(map, commit) {
+    const epoch = slideEpoch;
+    let finished = false, timeout;
+    const cleanup = () => {
+        finished = true;
+        map.off('render', rendered);
+        clearTimeout(timeout);
+        slideTimers.delete(timeout);
+        slideCleanups.delete(cleanup);
+    };
+    const finish = () => {
+        if (finished || epoch !== slideEpoch) return;
+        cleanup();
+        commit();
+    };
+    const rendered = () => {
+        const current = radarState(map).current;
+        if (current !== null && radarFrameReady(map, current)) finish();
+    };
+    map.on('render', rendered);
+    slideCleanups.add(cleanup);
+    // A provider outage must not hold the old geographic view indefinitely or
+    // extend the product duration. Fall back to the incoming basemap promptly.
+    timeout = slideSchedule(finish, 500);
+}
 function slideKickOff() {
+    clearSlideTimers();
+    if (typeof stopRadar === 'function') stopRadar();
+    $('.slides > div, .radar-group').stop(true, false).hide().css({ opacity: '', visibility: '' });
     idx = 0;
     nidx = 1;
     showSlides();
-}//end of slideKickOff() function
-
+}
 function slideCallBack() {
     idx++;
     nidx++;
     showSlides();
-};
+}
+// Keep the same accessible title text in every package. Separate spans let
+// only the 2005–06 stylesheet give the period and product different treatments.
+function setMapHeader(period, current = false) {
+    const lead = current ? 'Now' : period ? `${period}'s` : 'Regional';
+    const header = $('.map .header').empty();
+    header.append($('<span>').addClass('map-title-lead').text(lead));
+    if (!current) header.append(document.createTextNode(' '));
+    header.append($('<span>').addClass('map-title-tail').text(current ? '' : 'Forecast'));
+    header.attr('data-map-title', current ? 'current' : 'forecast');
+}
+
 var slidePrograms = {
     currentConditions() {
         try {
             audioPlayer.vocallocal.cc = vocallocalCC()
-            $(".current-conditions").fadeIn(0);
+            showSlide('.current-conditions');
             $(".current-conditions .city-name").text(locationConfig.mainCity.displayname.toUpperCase());
             $(".current-conditions .cond").text(weatherInfo.currentConditions.cond);
             $(".current-conditions .temp").text(weatherInfo.currentConditions.temp);
@@ -73,26 +143,26 @@ var slidePrograms = {
             $('.current-conditions .header').fadeIn(333, 'linear');
             audioPlayer.playCC(true);
 
-            setTimeout(() => {
+            slideSchedule(() => {
                 $('.current-conditions .box').fadeOut(167, 'linear');
                 $('.current-conditions .header').fadeOut(333, 'linear');
-                setTimeout(() => {
-                    $('.current-conditions').fadeOut(0);
+                slideSchedule(() => {
+                    hideSlide('.current-conditions');
                     slideCallBack();
                 }, 333);
             }, slideLength - 333);
         } catch (error) {
-            $(".current-conditions").fadeIn(0);
+            showSlide('.current-conditions');
             $(".current-conditions .city-name").text(locationConfig.mainCity.displayname.toUpperCase());
             $('.current-conditions .box').fadeIn(167, 'linear');
             $('.current-conditions .header').fadeIn(333, 'linear');
             $('.current-conditions .right-pane').fadeOut(0);
 
-            setTimeout(() => {
+            slideSchedule(() => {
                 $('.current-conditions .box').fadeOut(167, 'linear');
                 $('.current-conditions .header').fadeOut(333, 'linear');
-                setTimeout(() => {
-                    $('.current-conditions').fadeOut(0);
+                slideSchedule(() => {
+                    hideSlide('.current-conditions');
                     slideCallBack();
                 }, 333);
             }, slideLength - 333);
@@ -103,7 +173,7 @@ var slidePrograms = {
             if (weatherInfo.eightCities.cities.length == 0) {
                 throw new Error("No local observations");
             }
-            $('.eight-cities').fadeIn(0);
+            showSlide('.eight-cities');
             function eightCities(offset) {
                 var loDivs = ["i", "ii", "iii", "iv"];
                 for (var i = 0; i < 4; i++) {
@@ -119,34 +189,34 @@ var slidePrograms = {
             $('.eight-cities .box').fadeIn(167, 'linear');
             $('.eight-cities .header').fadeIn(333, 'linear');
             if (weatherInfo.eightCities.cities.length > 4) {
-                setTimeout(() => {
+                slideSchedule(() => {
                     $(".eight-cities .information").fadeOut(167, 'linear');
-                    setTimeout(() => {
+                    slideSchedule(() => {
                         eightCities(4);
                         $(".eight-cities .information").fadeIn(167, 'linear');
                     }, 167);
-                    setTimeout(() => {
+                    slideSchedule(() => {
                         $('.eight-cities .box').fadeOut(167, 'linear');
                         $('.eight-cities .header').fadeOut(333, 'linear');
-                        setTimeout(() => {
-                            $('.eight-cities').fadeOut(0);
+                        slideSchedule(() => {
+                            hideSlide('.eight-cities');
                             slideCallBack();
                         }, 333, 'linear');
                     }, slideLength - 333);
                 }, slideLength);
             } else {
-                setTimeout(() => {
+                slideSchedule(() => {
                     $('.eight-cities .box').fadeOut(167, 'linear');
                     $('.eight-cities .header').fadeOut(333, 'linear');
-                    setTimeout(() => {
-                        $('.eight-cities').fadeOut(0);
+                    slideSchedule(() => {
+                        hideSlide('.eight-cities');
                         slideCallBack();
                     }, 333, 'linear');
                 }, slideLength - 333);
             }
         } catch (error) {
             if (weatherInfo.eightCities.cities.length == 0) {
-                $('.eight-cities').fadeOut(0);
+                hideSlide('.eight-cities');
                 slideCallBack();
                 throw new Error("No local observations");
             }
@@ -156,7 +226,7 @@ var slidePrograms = {
     localForecast(lidx) {
         if (lidx === undefined) { lidx = 0 }
         if (audioSettings.vocallocal) audioPlayer.vocallocal.lf = vocallocalLF(lidx, slideLength);
-        $('.local-forecast').fadeIn(0);
+        showSlide('.local-forecast');
         $('.local-forecast .box').fadeIn(167, 'linear');
         $('.local-forecast .header').fadeIn(333, 'linear');
         $('.local-forecast .information').fadeIn(167, 'linear');
@@ -174,20 +244,20 @@ var slidePrograms = {
             audioPlayer.playLF();
         }
         if (lidx >= slideFlavor.order[idx].slides - 1) {
-            setTimeout(() => {
+            slideSchedule(() => {
                 $('.local-forecast .box').fadeOut(167, 'linear');
                 $('.local-forecast .header').fadeOut(333, 'linear');
                 $('.local-forecast .desc-mov').fadeOut(167, 'linear');
-                setTimeout(() => {
-                    $('.local-forecast').fadeOut(0);
+                slideSchedule(() => {
+                    hideSlide('.local-forecast');
                     slideCallBack();
                 }, 333);
             }, slideLength - 333);
         } else {
-            setTimeout(() => {
+            slideSchedule(() => {
                 $('.local-forecast .information').fadeOut(167, 'linear');
                 $('.local-forecast .desc-mov').fadeOut(167, 'linear');
-                setTimeout(() => {
+                slideSchedule(() => {
                     slidePrograms.localForecast(lidx + 1);
                 }, 333);
             }, slideLength - 333);
@@ -195,7 +265,7 @@ var slidePrograms = {
     },
     weekAhead() {
         audioPlayer.playEF();
-        $('.week-ahead').fadeIn(0);
+        showSlide('.week-ahead');
         $('.week-ahead .box').fadeIn(167, 'linear');
         $('.week-ahead .header').fadeIn(333, 'linear');
         $('.week-ahead .city-name').text(locationConfig.mainCity.extraname.toUpperCase());
@@ -212,17 +282,17 @@ var slidePrograms = {
             $(`.week-ahead .day.${waDivs[i]} .low`).text(weatherInfo.weekAhead.days[i].low);
             getIcon($(`.week-ahead .day.${waDivs[i]} .icon`), weatherInfo.weekAhead.days[i].icon, "forecast", "large");
         }
-        setTimeout(() => {
+        slideSchedule(() => {
             $('.week-ahead .box').fadeOut(167, 'linear');
             $('.week-ahead .header').fadeOut(333, 'linear');
-            setTimeout(() => {
-                $('.week-ahead').fadeOut(0);
+            slideSchedule(() => {
+                hideSlide('.week-ahead');
                 slideCallBack();
             }, 333);
         }, slideLength - 333);
     },
     airQuality() {
-        $('.air-quality').fadeIn(0);
+        showSlide('.air-quality');
         $('.air-quality .box').fadeIn(167, 'linear');
         $('.air-quality .header').fadeIn(333, 'linear');
         $('.air-quality .qualityarrow').fadeIn(167, 'linear');
@@ -234,32 +304,32 @@ var slidePrograms = {
         for (var i = 0; i < weatherInfo.airQuality.pollutants.length; i++) {
             $('.primpollut .pollutants').append(`<span>${weatherInfo.airQuality.pollutants[i]}</span>`);
         }
-        setTimeout(() => {
+        slideSchedule(() => {
             $('.air-quality .qualityarrow').animate({ "bottom": `${arrowAnim}px` }, 500, 'linear', function () {
                 $(`.qualitybar .${aqDiv} span.text`).fadeIn(500);
             })
         }, 167);
 
-        setTimeout(() => {
+        slideSchedule(() => {
             $('.air-quality .header').fadeOut(333, 'linear');
-            setTimeout(() => {
-                $('.air-quality').fadeOut(0);
+            slideSchedule(() => {
+                hideSlide('.air-quality');
                 slideCallBack();
             }, 333);
         }, slideLength - 333);
     },
     almanac() {
-        $('.almanac').fadeIn(0);
+        showSlide('.almanac');
         $('.almanac .box').fadeIn(167, 'linear');
         $('.almanac .header').fadeIn(333, 'linear');
         $('.almanac .day.i .almheader').text(weatherInfo.almanac.days[0].day);
-        $('.almanac .day.i .sunrise').append(weatherInfo.almanac.days[0].sunrise.replace("am", "<span>am</span>").replace("pm", "<span>pm</span>"));
-        $('.almanac .day.i .sunset').append(weatherInfo.almanac.days[0].sunset.replace("am", "<span>am</span>").replace("pm", "<span>pm</span>"));
+        $('.almanac .day.i .sunrise').html(weatherInfo.almanac.days[0].sunrise.replace("am", "<span>am</span>").replace("pm", "<span>pm</span>"));
+        $('.almanac .day.i .sunset').html(weatherInfo.almanac.days[0].sunset.replace("am", "<span>am</span>").replace("pm", "<span>pm</span>"));
         $('.almanac .day.ii .almheader').text(weatherInfo.almanac.days[1].day);
-        $('.almanac .day.ii .sunrise').append(weatherInfo.almanac.days[1].sunrise.replace("am", "<span>am</span>").replace("pm", "<span>pm</span>"));
-        $('.almanac .day.ii .sunset').append(weatherInfo.almanac.days[1].sunset.replace("am", "<span>am</span>").replace("pm", "<span>pm</span>"));
+        $('.almanac .day.ii .sunrise').html(weatherInfo.almanac.days[1].sunrise.replace("am", "<span>am</span>").replace("pm", "<span>pm</span>"));
+        $('.almanac .day.ii .sunset').html(weatherInfo.almanac.days[1].sunset.replace("am", "<span>am</span>").replace("pm", "<span>pm</span>"));
         $('.almanac .stationname').text(weatherInfo.almanac.stationname);
-        $('.almanac .almdate').text(new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' }).toUpperCase());
+        $('.almanac .almdate').text(weatherInfo.almanac.dateLabel || '');
         $('.almanac .yesterday .high').text(weatherInfo.almanac.yesterday.high);
         $('.almanac .yesterday .low').text(weatherInfo.almanac.yesterday.low);
         $('.almanac .average .high').text(weatherInfo.almanac.average.high);
@@ -269,80 +339,25 @@ var slidePrograms = {
         $('.almanac .records .highyear').text(weatherInfo.almanac.record.recordYearHigh);
         $('.almanac .records .lowyear').text(weatherInfo.almanac.record.recordYearLow);
 
-        setTimeout(() => {
+        slideSchedule(() => {
             $('.almanac .box').fadeOut(167, 'linear');
             $('.almanac .header').fadeOut(333, 'linear');
-            setTimeout(() => {
-                $('.almanac').fadeOut(0);
+            slideSchedule(() => {
+                hideSlide('.almanac');
                 slideCallBack();
             }, 333);
         }, slideLength - 333);
     },
     radarDoppler() {
         audioPlayer.playRadar();
-        $('.radar').fadeIn(0);
-        $('#regradar').fadeIn(0);
-        $('#regmap').fadeIn(0);
-        if(mapStyle == "mapbox://styles/colster/cmiccqynn00as01s4bt6501il"){
-            $('#regoutlines').fadeIn(0);
-            $('#regoutlinestrans').fadeIn(0);
-            addRadarCities();
-            $(".reg-cities").fadeIn(0);
-            $(".reg-cities-trans").fadeIn(0);
-        }
-        regmap.resize();
-        regradar.resize();
-        regoutlines.resize();
-        regoutlinestrans.resize();
-        $('.radar .header').fadeIn(167);
-        startRadar(regradar);
-
-        setTimeout(() => {
-            $(".reg-cities").fadeOut(0);
-            $(".reg-cities-trans").fadeOut(0);
-            $('.radar .header').fadeOut(0);
-            clearInterval(radarAnimation);
-            $('.radar').fadeOut(0);
-            $('#regradar').fadeOut(0);
-            $('#regmap').fadeOut(0);
-            $('#regoutlines').fadeOut(0);
-            $('#regoutlinestrans').fadeOut(0);
-            slideCallBack();
-        }, slideLength);
+        showRadarSlide('regional');
     },
     localDoppler() {
-        $('.radar').fadeIn(0);
-        $('#locradar').fadeIn(0);
-        $('#locmap').fadeIn(0);
-        if(mapStyle == "mapbox://styles/colster/cmiccqynn00as01s4bt6501il"){
-            $('#locoutlines').fadeIn(0);
-            $('#locoutlinestrans').fadeIn(0);
-            $(".loc-cities").fadeIn(0);
-            $(".loc-cities-trans").fadeIn(0);
-        }
-        locmap.resize();
-        locradar.resize();
-        locoutlines.resize();
-        locoutlinestrans.resize();
-        $('.radar .header').text("Local Doppler");
-        $('.radar .header').fadeIn(167);
-        startRadar(locradar);
-
-        setTimeout(() => {
-            $(".loc-cities").fadeOut(0);
-            $(".loc-cities-trans").fadeOut(0);
-            clearInterval(radarAnimation);
-            $('.radar').fadeOut(0);
-            $('#locradar').fadeOut(0);
-            $('#locmap').fadeOut(0);
-            $('#locoutlines').fadeOut(0);
-            $('#locoutlinestrans').fadeOut(0);
-            slideCallBack();
-        }, slideLength);
+        showRadarSlide('local');
     },
     daypartForecast() {
         //highest = 202, lowest = 78
-        $('.daypart-forecast').fadeIn(0);
+        showSlide('.daypart-forecast');
         $('.daypart-forecast .header').fadeIn(167, 'linear');
         $('.daypart-forecast .box').fadeIn(133, 'linear');
         $('.daypart-forecast .city-name').text(locationConfig.mainCity.extraname.toUpperCase());
@@ -366,18 +381,18 @@ var slidePrograms = {
             $(`.daypart-forecast .hour.${dpDivs[i]} .bar .temp`).text(weatherInfo.daypartForecast.times[i].temp);
             let barHgtMultipler = barRange == 0 ? 202 : ((weatherInfo.daypartForecast.times[i].temp - barMin) / barRange) * 124;
             let dpDiv = dpDivs[i];
-            setTimeout(() => {
+            slideSchedule(() => {
                 $(`.daypart-forecast .hour.${dpDiv} .bar`).animate({ "height": `${(barHgtMultipler + barminHeight)}px` }, 167, 'linear', function () {
                     $(`.daypart-forecast .hour.${dpDiv} .bar .temp`).fadeIn(133)
                 });
             }, 267 * (i + 1));
         }
 
-        setTimeout(() => {
+        slideSchedule(() => {
             $('.daypart-forecast .header').fadeOut(167, 'linear');
             $('.daypart-forecast .box').fadeOut(167, 'linear');
-            setTimeout(() => {
-                $('.daypart-forecast').fadeOut(0);
+            slideSchedule(() => {
+                hideSlide('.daypart-forecast');
                 slideCallBack();
             }, 167);
         }, slideLength - 167);
@@ -389,22 +404,24 @@ var slidePrograms = {
         for (var i = 0; i < (weatherInfo.bulletin.alerts.length > 2 ? 2 : weatherInfo.bulletin.alerts.length); i++) {
             text = text + `<span>${weatherInfo.bulletin.alerts[i].desc}</span><br>`
         }
-        $('.bulletin').fadeIn(0);
+        showSlide('.bulletin');
         $('.bulletin .alerts').empty();
         $('.bulletin .alerts').append(text);
 
         audioPlayer.playBulletin();
-        setTimeout(() => {
+        slideSchedule(() => {
             $('.bulletin .header').fadeOut(167, 'linear');
             $('.bulletin .alerts').fadeOut(167, 'linear');
-            setTimeout(() => {
-                $('.bulletin').fadeOut(0);
+            slideSchedule(() => {
+                hideSlide('.bulletin');
                 slideCallBack();
             }, 167);
         }, slideLength - 167);
     },
     mapTest() {
-        $('.map').fadeIn(0);
+        regionalMapLayer.render();
+        $('.map-cities .city').hide();
+        showSlide('.map');
         var mapDivs = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x"]
         for (let i = 0; i < locationConfig.regionalMap.map.length; i++) {
             $(`.map-cities .city.${mapDivs[i]}`).fadeIn(0);
@@ -413,8 +430,10 @@ var slidePrograms = {
         }
     },
     mapCurrent() {
-        $('.map').fadeIn(0);
-        $('.map .header').text("Now");
+        regionalMapLayer.render();
+        $('.map-cities .city').hide();
+        showSlide('.map');
+        setMapHeader(null, true);
         $('.map .header').fadeIn(167, 'linear');
         var mapDivs = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x"]
         for (let i = 0; i < locationConfig.regionalMap.map.length; i++) {
@@ -430,18 +449,20 @@ var slidePrograms = {
             }
         }
 
-        setTimeout(() => {
+        slideSchedule(() => {
             $('.map .header').fadeOut(167, 'linear');
-            setTimeout(() => {
-                $('.map').fadeOut(0);
+            slideSchedule(() => {
+                hideSlide('.map');
                 slideCallBack();
             }, 167);
         }, slideLength - 167);
     },
     mapForecast(midx) {
+        regionalMapLayer.render();
+        $('.map-cities .city').hide();
         if (midx === undefined) { midx = 0; }
-        $('.map').fadeIn(0);
-        $('.map .header').text(`${weatherInfo.map.days[midx]}'s Forecast`);
+        showSlide('.map');
+        setMapHeader(weatherInfo.map.days[midx]);
         $('.map .header').fadeIn(167, 'linear');
         var mapDivs = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x"]
         for (let i = 0; i < locationConfig.regionalMap.map.length; i++) {
@@ -457,18 +478,18 @@ var slidePrograms = {
             }
         }
 
-        setTimeout(() => {
+        slideSchedule(() => {
             if (slideFlavor.order[idx].slides == undefined) {
                 $('.map .header').fadeOut(167, 'linear');
-                setTimeout(() => {
-                    $('.map').fadeOut(0);
+                slideSchedule(() => {
+                    hideSlide('.map');
                     slideCallBack();
                 }, 167);
             } else {
                 if (midx >= slideFlavor.order[idx].slides - 1) {
                     $('.map .header').fadeOut(167, 'linear');
-                    setTimeout(() => {
-                        $('.map').fadeOut(0);
+                    slideSchedule(() => {
+                        hideSlide('.map');
                         slideCallBack();
                     }, 167);
                 } else {
@@ -476,16 +497,16 @@ var slidePrograms = {
                     for (let i = 0; i < locationConfig.regionalMap.map.length; i++) {
                         $(`.map-cities .city.${mapDivs[i]}`).fadeOut(167);
                     }
-                    setTimeout(() => {
-                        $('.map').fadeOut(0);
+                    slideSchedule(() => {
+                        hideSlide('.map');
                         slidePrograms.mapForecast(midx + 1);
                     }, 167);
                 }
             }
-        }, slideLength);
+        }, slideLength - 167);
     },
     outdoorActivity(){
-        $(".outdoor-activity").fadeIn(0);
+        showSlide('.outdoor-activity');
         $(".outdoor-activity .header").fadeIn(133, 'linear');
         $(".outdoor-activity .box").fadeIn(0);
         $(".outdoor-activity .outdoor-bg").css({'background-image': `url(images/outdoorActivity${weatherInfo.outdoorActivity.bg}.png)`, 'background-size': '100% 100%'});
@@ -503,36 +524,79 @@ var slidePrograms = {
         }
         getIcon($(".outdoor-activity .icon"), weatherInfo.outdoorActivity.icon, "forecast", "large");
 
-        setTimeout(() => {
+        slideSchedule(() => {
             $(".outdoor-activity .outdoor-bg").fadeOut(300, 'linear');
-            setTimeout(() => {
+            slideSchedule(() => {
                 $(".outdoor-activity .header").fadeOut(133, 'linear');
             }, 167);
-            setTimeout(() => {
-                $(".outdoor-activity").fadeOut(0);
+            slideSchedule(() => {
+                hideSlide('.outdoor-activity');
                 slideCallBack();
             }, 300);
         }, slideLength - 300);
     }
 } //end of slidePrograms
-function showSlides() {
-    slideLength = slideFlavor.order[idx].slideDelay;
-
-    if (nidx >= slideFlavor.order.length) {
-        nidx = 0;
-        slideCallBack = function () {
-            $("#main").fadeOut(0);
-            audioPlayer.stopPlaying();
-            audioPlayer = null;
-            //URL.revokeObjectURL(songURL);
-            setTimeout(() => {
-                window.location.reload();
-            }, 3000);
-        }
+function showRadarSlide(kind, onDone, keepRadar = false) {
+    const local = kind === 'local';
+    const map = local ? locradar : regradar;
+    const group = local ? '.local-radar-group' : '.regional-radar-group';
+    const other = local ? '.regional-radar-group' : '.local-radar-group';
+    const maps = local ? [locmap, locradar, locoutlines, locoutlinestrans] : [regmap, regradar, regoutlines, regoutlinestrans];
+    const handoff = $('.radar').css('display') !== 'none' &&
+        $(other).css('display') !== 'none' && $(other).css('visibility') !== 'hidden';
+    showSlide('.radar');
+    // Staging with visibility:hidden keeps the incoming canvas at its full size.
+    // Never scale, move, or alpha-blend radar geography to simulate a transition.
+    showSlide(group);
+    $(group).css('visibility', handoff ? 'hidden' : '');
+    $(local ? '#locmap, #locradar' : '#regmap, #regradar').show();
+    const outlines = local ? '#locoutlines, #locoutlinestrans' : '#regoutlines, #regoutlinestrans';
+    const cities = local ? '.loc-cities, .loc-cities-trans' : '.reg-cities, .reg-cities-trans';
+    if (mapStyle === "mapbox://styles/colster/cmiccqynn00as01s4bt6501il") {
+        addRadarCities();
+        $(outlines).show();
+        $(cities).show();
+    } else {
+        $(outlines).hide();
+        $(cities).hide();
     }
-    currentProgram = slidePrograms[slideFlavor.order[idx].function]
-    currentDiv = slideDivs[slideFlavor.order[idx].function]
-    nextProgram = slidePrograms[slideFlavor.order[nidx].function]
-    nextDiv = slideDivs[slideFlavor.order[nidx].function]
+    maps.forEach(map => map.resize());
+    const reveal = () => {
+        $(group).css('visibility', '');
+        hideSlide(other);
+        if (typeof setRadarTimelineMap === 'function') setRadarTimelineMap(map);
+        $('.radar').attr('data-radar-region', local ? 'local' : 'regional');
+        const regionalPackage = document.documentElement.dataset.package === '2005-regional';
+        $('.radar .header').stop(true, false).css('opacity', '').attr('data-radar-region', local ? 'local' : 'regional').text(regionalPackage ? 'RADAR/SATELLITE' : (local ? 'Local Doppler' : 'Regional Doppler')).show();
+    };
+    if (handoff) radarHandoff(map, reveal);
+    else reveal();
+    startRadar(map);
+    slideSchedule(() => {
+        // Stop on the product deadline, not when another radar loop finishes.
+        if (local) stopRadar(locradar);
+        else stopRadar(regradar);
+        const next = slideFlavor.order[idx + 1]?.function;
+        if (!keepRadar && !['radarDoppler', 'localDoppler'].includes(next)) hideSlide('.radar');
+        if (onDone) onDone(); else slideCallBack();
+    }, slideLength);
+}
+
+function showSlides() {
+    clearSlideTimers();
+    if (typeof stopRadar === 'function') stopRadar();
+    if (idx >= slideFlavor.order.length) {
+        $('#main').stop(true, false).hide();
+        audioPlayer?.stopPlaying();
+        audioPlayer = null;
+        slideSchedule(() => window.location.reload(), 3000);
+        return;
+    }
+    slideLength = slideFlavor.order[idx].slideDelay;
+    nidx = idx + 1;
+    currentProgram = slidePrograms[slideFlavor.order[idx].function];
+    currentDiv = slideDivs[slideFlavor.order[idx].function];
+    nextProgram = slidePrograms[slideFlavor.order[nidx]?.function];
+    nextDiv = slideDivs[slideFlavor.order[nidx]?.function];
     currentProgram();
 }

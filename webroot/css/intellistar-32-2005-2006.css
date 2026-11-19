@@ -1,0 +1,191 @@
+/* Reuse authored slide geometry; main.js fits the entire stage to a 4:3 box. */
+@import url("intellistar-32-2007.css?v=mapbox-runtime-20261013-4");
+
+html[data-theme="2005-2006"] {
+    --retro-ink: #f3f5ee;
+    --retro-text-shadow: 0 1px 1px #102344, 2px 3px 2px rgba(9, 25, 53, .85);
+    --retro-sky: url("../images/themes/2005-2006/sky.jpg?v=mapbox-runtime-20261013-4");
+}
+html[data-theme="2005-2006"] #blackscreen {
+    width: 1620px;
+    height: 1080px;
+}
+html[data-theme="2005-2006"] #background,
+html[data-theme="2005-2006"] #settings-menu {
+    /* Shift the sky upward so the sun blooms above the city strap, not behind
+       the weather values. A real texture supplies the cloud detail. */
+    background-color: #163774;
+    background-image: var(--retro-sky);
+    background-size: 100% 120%;
+    background-position: center bottom;
+    background-repeat: no-repeat;
+}
+html[data-theme="2005-2006"] #settings-menu .bg {
+    visibility: hidden;
+}
+/* Replace baked-in glossy bitmap panels, not the map/radar imagery. */
+html[data-theme="2005-2006"] #main .slides > div > .box,
+html[data-theme="2005-2006"] #settings-menu .box {
+    /* Translucent cobalt glass lets the same sky flow through every panel. */
+    background: linear-gradient(105deg, rgba(17, 53, 130, .72), rgba(40, 64, 140, .64) 53%, rgba(31, 56, 112, .75));
+    border: 3px solid rgba(131, 173, 208, .7);
+    border-right-color: #102e5d;
+    border-bottom-color: #112f5e;
+    box-shadow: inset 3px 2px 5px rgba(144, 183, 216, .2), 2px 3px 3px rgba(9, 29, 58, .45);
+}
+html[data-theme="2005-2006"] #main .slides > div > .box::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background: linear-gradient(180deg, rgba(111, 164, 204, .38), rgba(25, 75, 141, .85) 45%, rgba(11, 48, 112, .84));
+    border-bottom: 3px solid #163967;
+    box-shadow: 0 2px 2px rgba(126, 166, 203, .4);
+}
+html[data-theme="2005-2006"] #main .slides > div > .header {
+    color: #e7eded;
+    text-transform: lowercase;
+    font-family: "Interstate Bold", Arial, sans-serif;
+    text-shadow: 2px 3px 2px #284b69;
+    background: linear-gradient(90deg, rgba(199, 223, 225, .58), rgba(197, 222, 228, .26) 55%, transparent 95%);
+    border-left: 3px solid rgba(207, 232, 236, .7);
+    border-bottom: 3px solid rgba(169, 201, 214, .7);
+    padding: 0 14px;
+    width: 1410px;
+    height: 98px;
+    line-height: 94px;
+    margin-left: 108px;
+    margin-top: 66px;
+    left: 0;
+    top: 0;
+    transform: none;
+    font-size: 72px;
+    letter-spacing: 1.4px;
+}
+html[data-theme="2005-2006"] .theme-title-default {
+    display: none;
+}
+html[data-theme="2005-2006"] .theme-title-retro {
+    display: inline-flex;
+    margin-left: -14px;
+}
+html[data-theme="2005-2006"] .title-lead {
+    position: relative;
+    padding: 0 14px;
+    background: rgba(16, 67, 132, .66);
+    color: #e1e8e9;
+}
+html[data-theme="2005-2006"] .title-lead::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    height: 66px;
+    background: inherit;
+    pointer-events: none;
+}
+html[data-theme="2005-2006"] .title-tail {
+    padding-left: 12px;
+    color: #172a32;
+    text-shadow: 1px 2px 2px rgba(215, 230, 231, .6);
+}
+/* The reference's two panes share one cloud layer, divided by a fine rule. */
+html[data-theme="2005-2006"] #main .current-conditions .box::after {
+    content: "";
+    position: absolute;
+    top: 70px;
+    bottom: 0;
+    left: 34%;
+    width: 3px;
+    background: rgba(15, 42, 89, .9);
+    box-shadow: 3px 0 2px rgba(132, 171, 211, .35);
+}
+html[data-theme="2005-2006"] #main .current-conditions .box {
+    height: 706px;
+}
+/* Body text needs an explicit light color: the inherited 2007 sheet assigns
+   dark blue to individual labels/values, including nested almanac and AQ text.
+   Keep title tails, map temperatures, and light-backed badges independent. */
+html[data-theme="2005-2006"] #main .slides :where(
+    .information, .information div, .left-pane div, .right-pane div,
+    .extra-loc div, .hour div, .time, .heading, .val, .temp, .cond, .boxheader,
+    .eight-cities .top, .eight-cities .top *,
+    .almanac .day, .almanac .day *, .almanac .sunrise-text, .almanac .sunset-text,
+    .almanac .stationname, .almanac .bottomheader, .almanac .bottomheader *,
+    .almanac .yesterday, .almanac .yesterday *, .almanac .average, .almanac .average *,
+    .almanac .records, .almanac .records *,
+    .air-quality .day, .air-quality .primpollut, .air-quality .primpollut *,
+    .air-quality .source, .air-quality .qualitybar .text
+) {
+    color: var(--retro-ink);
+    text-shadow: var(--retro-text-shadow);
+}
+html[data-theme="2005-2006"] #main .slides > div > .city-name {
+    color: #e1e5af;
+    font-size: 50px;
+    text-shadow: 2px 3px 2px #274761;
+}
+html[data-theme="2005-2006"] #main .local-forecast .information {
+    margin-top: 250px;
+}
+html[data-theme="2005-2006"] #main .local-forecast .description {
+    width: 1310px;
+    font-size: 72px;
+    line-height: 80px;
+    font-family: "Helvetica Cn Bold", Arial, sans-serif;
+}
+/* The later package's large condition vignette wasn't part of this layout. */
+html[data-theme="2005-2006"] #main .local-forecast .desc-mov {
+    display: none !important;
+}
+html[data-theme="2005-2006"] #main :is(.description, .description *, .cond, .period,
+    .crawl, .crawl *, .alertcrawl, .alertcrawl *, .scroll, .scroll *) {
+    text-transform: none;
+}
+html[data-theme="2005-2006"] #main .week-ahead .day {
+    border-left: 2px solid rgba(123, 165, 206, .65);
+    border-right: 2px solid rgba(21, 46, 100, .9);
+    background: linear-gradient(100deg, rgba(24, 60, 131, .26), rgba(65, 99, 166, .12));
+}
+html[data-theme="2005-2006"] #main .week-ahead .weekend {
+    background: #e0e5e5;
+}
+html[data-theme="2005-2006"] #main .week-ahead .name.wk {
+    color: #304b61;
+    text-shadow: none;
+}
+html[data-theme="2005-2006"] #main .map .city .temp {
+    color: #e2df65;
+}
+html[data-theme="2005-2006"] #main .map .box::before {
+    display: none;
+}
+html[data-theme="2005-2006"] #main .daypart-forecast .bar {
+    background-color: #4c8090;
+}
+html[data-theme="2005-2006"] #main .ldl-black .currently {
+    color: #a7c5d4;
+}
+html[data-theme="2005-2006"] #main .week-ahead .cond {
+    font-family: "Helvetica Cn Bold", Arial, sans-serif;
+    font-size: 40px;
+    line-height: 44px;
+    width: 174px;
+    margin-left: 6px;
+    overflow-wrap: anywhere;
+}
+
+/* Keep the AQ category colors meaningful; use dark ink on the light bands. */
+html[data-theme="2005-2006"] #main .air-quality .qualitybar :is(.moderate, .unhealthy) .text {
+    color: #10213c;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, .45);
+}
+html[data-theme="2005-2006"] #main .air-quality .qualityarrow {
+    filter: brightness(0) invert(1) drop-shadow(2px 3px 2px #102344);
+}
+html[data-theme="2005-2006"] #main .air-quality .source {
+    bottom: 244px;
+}

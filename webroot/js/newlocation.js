@@ -50,6 +50,7 @@ async function getMainCity(query) {
             locationConfig.mainCity.lon = data.location.longitude[0];
             locationConfig.mainCity.state = data.location.adminDistrictCode[0];
             locationConfig.mainCity.stateFull = data.location.adminDistrict[0];
+            locationConfig.mainCity.country = data.location.country[0];
             locationConfig.radarCities.local[0] = {locationName:data.location.displayName[0],dotTopPos:520,dotLeftPos:810,nameTopMargin:-7,nameLeftMargin:43}
             locationConfig.radarCities.regional[0] = {locationName:data.location.displayName[0],dotTopPos:520,dotLeftPos:810,nameTopMargin:-7,nameLeftMargin:43}
             setTimeout(() => {
@@ -70,6 +71,7 @@ async function getMainCity(query) {
             locationConfig.mainCity.lon = data.location.longitude;
             locationConfig.mainCity.state = data.location.adminDistrictCode;
             locationConfig.mainCity.stateFull = data.location.adminDistrict;
+            locationConfig.mainCity.country = data.location.country;
             locationConfig.radarCities.local = locationSettings.radarCities.local;
             locationConfig.radarCities.regional = locationSettings.radarCities.regional;
             locationConfig.regionalMap.autoFind = locationSettings.mapCities.autoFind;
@@ -90,6 +92,7 @@ async function getMainCity(query) {
             locationConfig.mainCity.lon = data.lon;
             locationConfig.mainCity.state = data.region;
             locationConfig.mainCity.stateFull = data.regionName;
+            locationConfig.mainCity.country = data.country;
             locationConfig.radarCities.local[0] = {locationName:data.city,dotTopPos:520,dotLeftPos:800,nameTopMargin:-7,nameLeftMargin:40}
             locationConfig.radarCities.regional[0] = {locationName:data.city,dotTopPos:520,dotLeftPos:800,nameTopMargin:-7,nameLeftMargin:40}
             setTimeout(() => {
@@ -191,6 +194,7 @@ function createNewExtraCity(i){
 var distances = []
 var rmBoundaries = [265, 270, 715, 630]
 function sortRegionalList(){
+    if (regionalMapLayer.prepare()) return;
     if(locationSettings.mapCities.autoFind == false){
         for(let i = 0; i < locationSettings.mapCities.map.length; i++){
             //console.log(locationSettings.mapCities.map[i]);

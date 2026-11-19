@@ -1,0 +1,98 @@
+/* Isolated to the international regional background; never the theme or radar. */
+.international-regional-map[hidden],
+.international-regional-map [hidden] {
+    display: none !important;
+}
+.map[data-regional-map="international"] > .map-regional {
+    display: none;
+}
+.map[data-regional-map="international"] > .international-regional-map {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1620px;
+    height: 900px;
+    overflow: hidden;
+    background: #3d4930;
+    border-bottom: 4px solid #82907c;
+    box-sizing: content-box;
+}
+.map[data-regional-map="international"] .international-map-image {
+    position: absolute;
+    width: 1620px;
+    height: 900px;
+    left: 0;
+    top: 0;
+    /* Two-tone atlas grade, rather than simply dimming the modern road map.
+       Never grade the user's text/icons/LDL or the separate provider branding. */
+    filter: url("../images/maps/international-atlas-filter.svg?v=atlas-palette-2#atlas");
+}
+.map[data-regional-map="international"] .map-cities .city {
+    /* More room for neighboring towns without moving their geographic anchors. */
+    transform: scale(.75);
+    transform-origin: top left;
+}
+.map[data-regional-map="international"] .map-cities .city-name {
+    font-family: "Interstate Bold", Arial, sans-serif;
+    font-weight: bold;
+    color: #f3f5ee;
+    text-shadow: -1px -1px 0 #263822, 1px 1px 0 #263822, 2px 3px 2px #172719;
+    font-size: 52px;
+    line-height: 1.05;
+    width: max-content;
+    max-width: 480px;
+    left: 50%;
+    bottom: calc(100% - 52px);
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: center;
+    transform: translateX(-50%) scaleY(.88);
+    transform-origin: center bottom;
+}
+.map[data-regional-map="international"] .international-map-status {
+    position: absolute;
+    left: 110px;
+    right: 110px;
+    top: 190px;
+    padding: 10px 20px;
+    color: #f3f5ee;
+    background: rgba(18, 36, 28, .88);
+    font: 32px "Interstate Bold", Arial, sans-serif;
+}
+.map[data-regional-map="international"] .international-map-credit {
+    position: absolute;
+    bottom: 12px;
+    left: 175px;
+    padding: 3px 0;
+    color: #e1e6d8;
+    background: transparent;
+    text-shadow: 0 1px 2px #101a0d, 1px 0 2px #101a0d;
+    font: 20px Arial, sans-serif;
+    letter-spacing: 0;
+    pointer-events: auto;
+}
+.map[data-regional-map="international"] .international-map-credit a {
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-decoration: none;
+}
+
+.map[data-regional-map="international"] .international-map-credit a:hover,
+.map[data-regional-map="international"] .international-map-credit a:focus-visible {
+    text-decoration: underline;
+}
+.map[data-regional-map="international"] .international-map-logo {
+    position: absolute;
+    left: 16px;
+    bottom: 10px;
+    width: 132px;
+    height: 35px;
+    display: block;
+    background-image: url("../images/maps/mapbox-logo.svg");
+    background-size: contain;
+    background-repeat: no-repeat;
+    pointer-events: auto;
+    /* Keep the official Mapbox wordmark unaltered and outside the image grade. */
+    filter: none;
+}

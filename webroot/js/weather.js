@@ -90,6 +90,7 @@ async function grabData() {
     await grabOutdoorActivityData();
     await grabMapCityData();
     await grabAlerts();
+    await grabRegionalForecast();
     console.log(`Weather grab done in ${Date.now() - now}ms`);
     console.log(weatherInfo);
     setTimeout(() => {
@@ -163,11 +164,32 @@ async function grabNearbyCC() {
         }
     })
 }
+// These API fields already contain the forecast location's wall-clock time
+// and UTC offset. Parsing into Date and formatting without a zone incorrectly
+// converts them to the viewer's computer zone. Keep the supplied local fields,
+// including each day's own DST/half-hour offset. Polar/missing events stay blank.
+function formatSolarTime(localISO) {
+    if (typeof localISO !== 'string') return '—';
+    const match = localISO.match(/^\d{4}-\d{2}-\d{2}T(\d{2}):(\d{2})(?::\d{2})?(?:[+-]\d{2}:?\d{2}|Z)$/);
+    if (!match) return '—';
+    const hour = Number(match[1]), minute = Number(match[2]);
+    if (hour > 23 || minute > 59) return '—';
+    return `${hour % 12 || 12}:${match[2]} ${hour < 12 ? 'am' : 'pm'}`;
+}
+function solarDateLabel(localISO) {
+    if (typeof localISO !== 'string' || !/^\d{4}-\d{2}-\d{2}T/.test(localISO)) return '';
+    const date = new Date(localISO.slice(0, 10) + 'T12:00:00Z');
+    return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('en-US', {
+        timeZone: 'UTC', month: 'long', day: 'numeric'
+    }).toUpperCase();
+}
+
 async function grabLocalForecast() {
     //includes 36 hour forecast and week ahead
     weatherInfo.dayDesc.days = [];
     weatherInfo.weekAhead.days = [];
     weatherInfo.almanac.days = [];
+    weatherInfo.almanac.dateLabel = "";
     var url = "https://api.weather.com/v3/wx/forecast/daily/7day?geocode=" + locationConfig.mainCity.lat + "," + locationConfig.mainCity.lon + "&format=json&units=e&language=en-US&apiKey=" + api_key;
     $.getJSON(url, function (data) {
         var dayOfWeek = { 0: "Monday", 1: "Tuesday", 2: "Wednesday", 3: "Thursday", 4: "Friday", 5: "Saturday", 6: "Sunday" }
@@ -198,17 +220,19 @@ async function grabLocalForecast() {
             weatherInfo.weekAhead.days.push(dayWAtoAdd)
         }
         //ALMANAC
+        weatherInfo.almanac.noReport = false;
         var almOffset = data.dayOfWeek[0] === null ? 1 : 0;
+        weatherInfo.almanac.dateLabel = solarDateLabel(data.validTimeLocal?.[almOffset] || data.sunriseTimeLocal?.[almOffset] || data.sunsetTimeLocal?.[almOffset]);
         var almanacDayOne = {
             day: data.dayOfWeek[almOffset].toUpperCase(),
-            sunrise: new Date(data.sunriseTimeLocal[almOffset]).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true, minute: 'numeric' }).toLowerCase(),
-            sunset: new Date(data.sunsetTimeLocal[almOffset]).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true, minute: 'numeric' }).toLowerCase()
+            sunrise: formatSolarTime(data.sunriseTimeLocal?.[almOffset]),
+            sunset: formatSolarTime(data.sunsetTimeLocal?.[almOffset])
         }
         weatherInfo.almanac.days.push(almanacDayOne);
         var almanacDayTwo = {
             day: data.dayOfWeek[almOffset + 1].toUpperCase(),
-            sunrise: new Date(data.sunriseTimeLocal[almOffset + 1]).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true, minute: 'numeric' }).toLowerCase(),
-            sunset: new Date(data.sunsetTimeLocal[almOffset + 1]).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true, minute: 'numeric' }).toLowerCase()
+            sunrise: formatSolarTime(data.sunriseTimeLocal?.[almOffset + 1]),
+            sunset: formatSolarTime(data.sunsetTimeLocal?.[almOffset + 1])
         }
         weatherInfo.almanac.days.push(almanacDayTwo);
     }).fail(function () {
@@ -336,42 +360,45 @@ async function grabDaypartForecast() {
         }
     })
 }
+var mapDataRequest = 0;
 async function grabMapCityData(){
+    // Refresh international geography from already-fetched nearby-city metadata.
+    // No new geocoding service or changes to the weather polling schedule.
+    regionalMapLayer.prepare();
+    const request = ++mapDataRequest;
+    const cities = locationConfig.regionalMap.map.slice();
+    const cityKey = list => list.map(city => `${city.lat},${city.lon}`).join(';');
+    const key = cityKey(cities);
     weatherInfo.map.mapCities = [];
-    var url = 'https://api.weather.com/v3/aggcommon/v3-wx-observations-current;v3-wx-forecast-daily-3day?geocodes='
-    for(let i = 0; i < locationConfig.regionalMap.map.length; i++){
-        url = url + `${locationConfig.regionalMap.map[i].lat},${locationConfig.regionalMap.map[i].lon};`
-    }
-    url += "&language=en-US&units=e&format=json&apiKey=" + api_key;
-    var midx = 0;
+    if (!cities.length) return;
+    const url = 'https://api.weather.com/v3/aggcommon/v3-wx-observations-current;v3-wx-forecast-daily-3day?geocodes=' +
+        key + '&language=en-US&units=e&format=json&apiKey=' + api_key;
     $.getJSON(url, function(data){
-        midx = data[0]["v3-wx-forecast-daily-3day"].daypart[0].temperature[0] == null ? 1 : 0;
+        // A response for the previous location must never label the new map.
+        if (request !== mapDataRequest || key !== cityKey(locationConfig.regionalMap.map)) return;
+        if (!Array.isArray(data)) return;
+        const first = data.find(item => item?.['v3-wx-forecast-daily-3day']?.daypart?.[0]);
+        if (!first) return;
+        const daily = first['v3-wx-forecast-daily-3day'];
+        const midx = daily.daypart[0].temperature[0] == null ? 1 : 0;
         weatherInfo.map.days = [
-            data[0]["v3-wx-forecast-daily-3day"].daypart[0].daypartName[midx],
-            data[0]["v3-wx-forecast-daily-3day"].daypart[0].daypartName[midx+1] == "Tomorrow" ? data[0]["v3-wx-forecast-daily-3day"].dayOfWeek[1] : data[0]["v3-wx-forecast-daily-3day"].daypart[0].daypartName[midx+1],
-        ]
-        data.forEach((ajaxedLoc, i) =>{
-            //console.log(ajaxedLoc);
-            var mapObj = {
-                name: locationConfig.regionalMap.map[i].name,
-                current: {
-                    temp: ajaxedLoc["v3-wx-observations-current"].temperature,
-                    icon: ajaxedLoc["v3-wx-observations-current"].iconCodeExtend
-                },
-                forecasts: [
-                    {
-                        temp: ajaxedLoc["v3-wx-forecast-daily-3day"].daypart[0].temperature[midx],
-                        icon: ajaxedLoc["v3-wx-forecast-daily-3day"].daypart[0].iconCodeExtend[midx]
-                    },
-                    {
-                        temp: ajaxedLoc["v3-wx-forecast-daily-3day"].daypart[0].temperature[midx+1],
-                        icon: ajaxedLoc["v3-wx-forecast-daily-3day"].daypart[0].iconCodeExtend[midx+1]
-                    }
-                ]
-            }
-            weatherInfo.map.mapCities.push(mapObj);
-        })
-    })
+            daily.daypart[0].daypartName[midx],
+            daily.daypart[0].daypartName[midx+1] === "Tomorrow" ? daily.dayOfWeek[1] : daily.daypart[0].daypartName[midx+1]
+        ];
+        // Keep slots aligned even when a station has no observation or forecast.
+        weatherInfo.map.mapCities = cities.map((city, i) => {
+            const observation = data[i]?.['v3-wx-observations-current'];
+            const forecast = data[i]?.['v3-wx-forecast-daily-3day']?.daypart?.[0];
+            return {
+                name: city.name,
+                current: { temp: observation?.temperature ?? '', icon: observation?.iconCodeExtend ?? 'blank' },
+                forecasts: [midx, midx+1].map(period => ({
+                    temp: forecast?.temperature?.[period] ?? '',
+                    icon: forecast?.iconCodeExtend?.[period] ?? 'blank'
+                }))
+            };
+        });
+    });
 }
 
 async function grabAlerts() {

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <!-- Palette adaptation for Mapbox Outdoors, not a geographic mask.
+       sRGB is explicit so the grade follows the same channels as the bitmap.
+       Hillshade/line luminance is preserved; blue-dominant pixels are graded
+       as water. Unlike a global brightness filter this keeps water blue and
+       turns the pale land/road palette into the US atlas's subdued olive. -->
+  <filter id="atlas" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feColorMatrix in="SourceGraphic" type="saturate" values="0" result="relief"/>
+    <feComponentTransfer in="relief" result="land">
+      <feFuncR type="gamma" amplitude="0.48" exponent="1.2" offset="-0.11"/>
+      <feFuncG type="gamma" amplitude="0.49" exponent="1.1" offset="-0.09"/>
+      <feFuncB type="gamma" amplitude="0.30" exponent="1.25" offset="-0.06"/>
+    </feComponentTransfer>
+    <feComponentTransfer in="relief" result="water">
+      <feFuncR type="linear" slope="0.02" intercept="0.005"/>
+      <feFuncG type="linear" slope="0.12" intercept="0.005"/>
+      <feFuncB type="linear" slope="0.48" intercept="0.01"/>
+    </feComponentTransfer>
+    <feColorMatrix in="SourceGraphic" type="matrix" values="
+      0 0 0 0 0
+      0 0 0 0 0
+      0 0 0 0 0
+      -12 0 12 0 -0.08" result="waterMask"/>
+    <feComposite in="water" in2="waterMask" operator="in" result="gradedWater"/>
+    <feComposite in="land" in2="waterMask" operator="out" result="gradedLand"/>
+    <feComposite in="gradedWater" in2="gradedLand" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+  </filter>
+</svg>

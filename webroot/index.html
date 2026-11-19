@@ -4,12 +4,16 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>IntelliStar Simulator</title>
+    <!-- Bump this revision and the matching asset URLs when presentation assets change. -->
+    <meta name="asset-revision" content="mapbox-runtime-20261013-4">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <link rel="stylesheet" href="main.css">
-    <div id="styles">
-        <link rel="stylesheet" href="css/intellistar-32-2008.css">
-    </div>
+    <link rel="stylesheet" href="main.css?v=mapbox-runtime-20261013-4&transitions=2">
+    <link rel="stylesheet" href="css/regional-map.css?v=atlas-palette-2">
+    <link rel="stylesheet" href="css/radar-timeline.css?v=retro-history-2">
+    <link rel="stylesheet" href="css/current-conditions-banner.css?v=cloud-glass-1">
+    <link rel="stylesheet" href="css/map-forecast-banner.css?v=mono-forecast-1">
+    <link id="theme-styles" rel="stylesheet" href="css/intellistar-32-2008.css?v=mapbox-runtime-20261013-4">
 
     <link rel="preload" as="image" href="images/LDL.png">
     <link rel="preload" as="image" href="images/LDL2.png">
@@ -44,22 +48,25 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <script type="text/javascript" src="js/jplayer/jquery.jplayer.min.js"></script>
     <script type="text/javascript" src="js/utils/date_fns.min.js"></script>
-    <script type="text/javascript" src="js/utils/date_fns.min.js.map"></script>
     <script type="text/javascript" src="js/utils/vocallocaldata.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jquery.marquee@1.5.0/jquery.marquee.min.js"
         type="text/javascript"></script>
 
-    <script type="text/javascript" src="js/config.js"></script>
-    <script type="text/javascript" src="js/main.js"></script>
-    <script type="text/javascript" src="js/extras.js"></script>
-    <script type="text/javascript" src="js/audio.js"></script>
-    <script type="text/javascript" src="js/vocallocal.js"></script>
-    <script type="text/javascript" src="js/settings.js"></script>
-    <script type="text/javascript" src="js/newlocation.js"></script>
-    <script type="text/javascript" src="js/weather.js"></script>
-    <script type="text/javascript" src="js/radar.js"></script>
-    <script type="text/javascript" src="js/ldl.js"></script>
-    <script type="text/javascript" src="js/slides.js"></script>
+    <script src="runtime-config.js?v=mapbox-runtime-20261013-4"></script>
+    <script type="text/javascript" src="js/config.js?v=mapbox-runtime-20261013-4&timing=1"></script>
+    <script type="text/javascript" src="js/themes.js?v=mapbox-runtime-20261013-4"></script>
+    <script type="text/javascript" src="js/main.js?v=mapbox-runtime-20261013-4"></script>
+    <script type="text/javascript" src="js/extras.js?v=mapbox-runtime-20261013-4&timing=1"></script>
+    <script type="text/javascript" src="js/audio.js?v=mapbox-runtime-20261013-4"></script>
+    <script type="text/javascript" src="js/vocallocal.js?v=mapbox-runtime-20261013-4"></script>
+    <script src="js/regional-map.js?v=mapbox-runtime-20261013-4&regional=2"></script>
+    <script type="text/javascript" src="js/settings.js?v=mapbox-runtime-20261013-4"></script>
+    <script type="text/javascript" src="js/newlocation.js?v=mapbox-runtime-20261013-4&regional=1"></script>
+    <script type="text/javascript" src="js/weather.js?v=mapbox-runtime-20261013-4&regional=1&solar=1"></script>
+    <script type="text/javascript" src="js/radar.js?v=mapbox-runtime-20261013-4&playback=6"></script>
+    <script type="text/javascript" src="js/ldl.js?v=mapbox-runtime-20261013-4"></script>
+    <script type="text/javascript" src="js/slides.js?v=mapbox-runtime-20261013-4&regional=1&playback=6&maptitle=1"></script>
+    <script type="text/javascript" src="js/regional-2005.js?v=mapbox-runtime-20261013-4"></script>
     <div id="blackscreen" class="container"
         style="position: absolute; z-index: 2000; background-color: black; display: none;">
     </div>
@@ -104,7 +111,7 @@
         <div id="background"></div>
         <div class="slides">
             <div class="current-conditions" style="display: none;">
-                <div class="header" style="display: none;">Now</div>
+                <div class="header" style="display: none;"><span class="theme-title-default">Now</span><span class="theme-title-retro" hidden><span class="title-lead">current</span> <span class="title-tail">conditions</span></span></div>
                 <div class="box" style="display: none;"></div>
                 <div class="city-name"></div>
                 <div class="left-pane">
@@ -188,7 +195,7 @@
                 </div>
             </div>
             <div class="local-forecast" style="display: none;">
-                <div class="header" style="display: none;">Local Forecast</div>
+                <div class="header" style="display: none;"><span class="theme-title-default">Local Forecast</span><span class="theme-title-retro" hidden><span class="title-lead">local</span> <span class="title-tail">forecast</span></span></div>
                 <div class="box" style="display: none;"></div>
                 <div class="city-name"></div>
                 <div class="information">
@@ -199,7 +206,7 @@
                     style="background-image: url(images/localforecast/cloudy.png); background-size: 100%;"></div>
             </div>
             <div class="week-ahead" style="display: none;">
-                <div class="header" style="display: none;">The Week Ahead</div>
+                <div class="header" style="display: none;"><span class="theme-title-default">The Week Ahead</span><span class="theme-title-retro" hidden><span class="title-lead">the week</span> <span class="title-tail">ahead</span></span></div>
                 <div class="box" style="display: none;"></div>
                 <div class="city-name"></div>
                 <div class="information">
@@ -336,26 +343,40 @@
 
             </div>
             <div class="radar" style="display:none;">
-                <div class="header" style="display:none;">Regional Doppler</div>
-                <div class="hourloop">3 Hour Loop</div>
+                <div class="header" data-radar-region="regional" style="display:none;">Regional Doppler</div>
+                <div class="hourloop"><span class="radar-period-default">3 Hour Loop</span><span class="radar-period-retro">Past 3 Hours</span></div>
+                <div class="radar-history-strip" aria-hidden="true"></div>
+                <div class="radar-timeline" role="img" aria-label="Radar history: waiting for frames">
+                    <div class="radar-timeline-track" aria-hidden="true">
+                        <div class="radar-time-marker" hidden></div>
+                        <span class="radar-hour" style="--hour-position:0%">-3</span>
+                        <span class="radar-hour" style="--hour-position:33.333333%">-2</span>
+                        <span class="radar-hour" style="--hour-position:66.666667%">-1</span>
+                        <span class="radar-hour" style="--hour-position:100%">0</span>
+                    </div>
+                </div>
                 <div class="key">light<img src="images/radarLegend.png"><span>heavy</span></div>
                 <div class="banner"></div>
-                <div id="locradar" style="display:none;"></div>
-                <div id="locmap" style="display:none;"></div>
-                <div id="locoutlines" style="display:none;"></div>
-                <div id="locoutlinestrans" style="display:none;"></div>
-                <div class="loc-cities" style="display:none;">
-                </div>
-                <div class="loc-cities-trans" style="display:none;">
-                </div>
+                <div class="radar-group local-radar-group" style="display:none;">
+                    <div id="locradar" style="display:none;"></div>
+                    <div id="locmap" style="display:none;"></div>
+                    <div id="locoutlines" style="display:none;"></div>
+                    <div id="locoutlinestrans" style="display:none;"></div>
+                    <div class="loc-cities" style="display:none;">
+                    </div>
+                    <div class="loc-cities-trans" style="display:none;">
+                    </div>
 
-                <div id="regradar" style="display:none;"></div>
-                <div id="regmap" style="display:none;"></div>
-                <div id="regoutlines" style="display:none;"></div>
-                <div id="regoutlinestrans" style="display:none;"></div>
-                <div class="reg-cities" style="display: none;">
                 </div>
-                <div class="reg-cities-trans" style="display: none;">
+                <div class="radar-group regional-radar-group" style="display:none;">
+                    <div id="regradar" style="display:none;"></div>
+                    <div id="regmap" style="display:none;"></div>
+                    <div id="regoutlines" style="display:none;"></div>
+                    <div id="regoutlinestrans" style="display:none;"></div>
+                    <div class="reg-cities" style="display: none;">
+                    </div>
+                    <div class="reg-cities-trans" style="display: none;">
+                    </div>
                 </div>
             </div>
             <div class="satellite" style="display: none;">
@@ -425,82 +446,91 @@
                 </div>
             </div>
             <div class="map" style="display: none;">
-                <div class="header" style="display: none;">Tonight's Forecast</div>
+                <div class="header" data-map-title="forecast" style="display: none;"><span class="map-title-lead">Tonight's</span> <span class="map-title-tail">Forecast</span></div>
                 <div class="box"></div>
                 <div class="map-regional" style>
                     <img class="merc" src="images/maps/regional_map.png">
                     <img class="borders" src="images/maps/states_modified.svg">
                     <img class="coastlines" src="images/maps/coastlines_modified.svg">
                 </div>
+                <div class="international-regional-map" hidden>
+                    <div class="international-map-status" role="status"></div>
+                    <a class="international-map-logo" href="https://www.mapbox.com/" target="_blank" rel="noopener noreferrer" aria-label="Mapbox"></a>
+                    <div class="international-map-credit">
+                        <a href="https://www.mapbox.com/about/maps/" target="_blank" rel="noopener noreferrer">© Mapbox</a> ·
+                        <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap</a> ·
+                        <a href="https://apps.mapbox.com/feedback/" target="_blank" rel="noopener noreferrer">Improve this map</a>
+                    </div>
+                </div>
                 <div class="map-cities" style>
                     <div class="city i" style="display: none;">
                         <div class="city-name"></div>
                         <div class="temp">88</div>
                         <div class="icon"
-                            style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;">
+                            data-icon-file="Ts" data-icon-size="large" style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;">
                         </div>
                     </div>
                     <div class="city ii" style="display: none;">
                         <div class="city-name"></div>
                         <div class="temp">88</div>
                         <div class="icon"
-                            style="background-image: url(images/icons/2007/large/Ts.webp);background-size: 100% 100%;">
+                            data-icon-file="Ts" data-icon-size="large" style="background-image: url(images/icons/2007/large/Ts.webp);background-size: 100% 100%;">
                         </div>
                     </div>
                     <div class="city iii" style="display: none;">
                         <div class="city-name"></div>
                         <div class="temp">88</div>
                         <div class="icon"
-                            style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;">
+                            data-icon-file="Ts" data-icon-size="large" style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;">
                         </div>
                     </div>
                     <div class="city iv" style="display: none;">
                         <div class="city-name"></div>
                         <div class="temp">88</div>
                         <div class="icon"
-                            style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;">
+                            data-icon-file="Ts" data-icon-size="large" style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;">
                         </div>
                     </div>
                     <div class="city v" style="display: none;">
                         <div class="city-name"></div>
                         <div class="temp">88</div>
                         <div class="icon"
-                            style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;">
+                            data-icon-file="Ts" data-icon-size="large" style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;">
                         </div>
                     </div>
                     <div class="city vi" style="display: none;">
                         <div class="city-name"></div>
                         <div class="temp">88</div>
                         <div class="icon"
-                            style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;">
+                            data-icon-file="Ts" data-icon-size="large" style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;">
                         </div>
                     </div>
                     <div class="city vii" style="display: none;">
                         <div class="city-name"></div>
                         <div class="temp">88</div>
                         <div class="icon"
-                            style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;">
+                            data-icon-file="Ts" data-icon-size="large" style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;">
                         </div>
                     </div>
                     <div class="city viii" style="display: none;">
                         <div class="city-name"></div>
                         <div class="temp">88</div>
                         <div class="icon"
-                            style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;">
+                            data-icon-file="Ts" data-icon-size="large" style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;">
                         </div>
                     </div>
                     <div class="city ix" style="display: none;">
                         <div class="city-name"></div>
                         <div class="temp">88</div>
                         <div class="icon"
-                            style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;">
+                            data-icon-file="Ts" data-icon-size="large" style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;">
                         </div>
                     </div>
                     <div class="city x" style="display: none;">
                         <div class="city-name"></div>
                         <div class="temp">88</div>
                         <div class="icon"
-                            style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;">
+                            data-icon-file="Ts" data-icon-size="large" style="background-image: url(images/icons/2007/large/Ts.webp); background-size: 100% 100%;">
                         </div>
                     </div>
                 </div>
@@ -552,7 +582,7 @@
             <div class="observations">
                 <div class="city-name"></div>
                 <div class="obs">
-                    <div class="icon" style="background-image: url(images/icons/2010/stills/Sun.mv.png); background-size: 100% 100%;"></div>
+                    <div class="icon" data-icon-file="Sun" data-icon-size="stills" style="background-image: url(images/icons/2010/stills/Sun.mv.png); background-size: 100% 100%;"></div>
                     <div class="tempobs"></div>
                     <div class="wind" style="display: none;">
                         <div class="obsheader">WIND:</div>
@@ -645,7 +675,13 @@
                 </button> -->
             </div>
             <div class="versions changecolor" style="color: #171717;">
-                <div class="versionstext changecolor">Version:</div>
+                <div class="versionstext changecolor" aria-live="polite">Version:</div>
+                <button id="versions2005" class="versionsbutton" onclick="versionsChanger(2005)" aria-pressed="false">
+                    <div>2005-2006</div>
+                </button>
+                <button id="versions2005-regional" class="versionsbutton" onclick="versionsChanger('2005-regional')" aria-pressed="false">
+                    <div>2005 Regional</div>
+                </button>
                 <button id="versions2007" class="versionsbutton" onclick="versionsChanger(2007)">
                     <div>2007</div>
                 </button>

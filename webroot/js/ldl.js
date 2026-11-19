@@ -1,3 +1,26 @@
+// Presentation timers are owned by the LDL, not the weather/slide loops.
+const ldlTimers = new Set();
+function scheduleLDL(callback, delay) {
+    const timer = setTimeout(() => {
+        ldlTimers.delete(timer);
+        callback();
+    }, delay);
+    ldlTimers.add(timer);
+    return timer;
+}
+function stopLDLLoops() {
+    ldlTimers.forEach(clearTimeout);
+    ldlTimers.clear();
+    $('.ldl-blue, .ldl-blue *, .ldl-black, .ldl-black *').stop(true, false);
+    $('.ldl-black .crawl, .ldl-blue .crawl .scroll').off('finished').marquee('destroy').empty();
+    // Leave the independent severe-alert marquee and its audio handler intact.
+    $('.ldl-blue *').css('animation', '');
+    $('.ldl-blue .observations .city-name, .ldl-blue .obs > div').hide().css('margin-top', '');
+    $('.ldl-blue .upnext-tabs > div').css({ left: '', opacity: '', zIndex: '', display: '' });
+    $('.ldl-blue .time-padding, .ldl-blue .crawl-tab, .ldl-blue .top-bar').hide();
+    $('.ldl-black .icon, .ldl-black .temp').hide();
+}
+
 var obsInterval;
 var alertActive;
 var crawlIndex = 0;
@@ -8,7 +31,10 @@ var dateTimeChanger = setInterval(() => {
 }, 1000);
 
 function startLoops(){
+    stopLDLLoops();
     if(alertActive) return;
+    ldlIndex = 0;
+    timeTabIndex = 0;
     if(Number(appearanceSettings.graphicsPackage) >= 2009){
         blueLDL(appearanceSettings.ldlType);
         $(".ldl-blue").fadeIn(0);
@@ -33,14 +59,15 @@ function timeTab(type){
         $(".ldl-black .temp").fadeIn(500);
     }
     var list = ["temp","time"];
-    setTimeout(() => {
+    scheduleLDL(() => {
         timeTab(list[timeTabIndex % list.length]);
         timeTabIndex = timeTabIndex + 1;
     }, 8000);
 }
 
 function blackLDL(type){
-    if(type == 'both'){
+    // The regional package keeps the reference lower third: observations only, no ad crawl.
+    if(type == 'both' && document.documentElement.dataset.package !== '2005-regional'){
         crawlIndex = Math.floor(Math.random() * appearanceSettings.marqueeAd.length);
         adCrawl(crawlIndex);
     } else {
@@ -129,12 +156,14 @@ function blackLDLObs(){
     currentProgram();
     ldlIndex = ldlIndex + 1;
 
-    setTimeout(() => {
+    scheduleLDL(() => {
         obsInterval = blackLDLObs()
     }, 6000);
 }
 
 function startAlertCrawl(){
+    stopLDLLoops();
+    $('.ldl-black .alertinfo .alertcrawl').off('finished').marquee('destroy');
     $('.ldl-blue').fadeOut(0);
     $('.ldl-black').fadeIn(0);
     $('.ldl-black .time').fadeIn(0);
@@ -154,18 +183,19 @@ function startAlertCrawl(){
     }
     if(!inSettings && warningSettings[weatherInfo.bulletin.crawlAlert.alert.name].severe) audioPlayer.playSevere(weatherInfo.bulletin.crawlAlert.alert.name);
     $('.ldl-black .alertinfo .name').text(weatherInfo.bulletin.crawlAlert.alert.name.toUpperCase());
-    $('.ldl-black .alertinfo .alertcrawl').text(weatherInfo.bulletin.crawlAlert.alert.description.toUpperCase());
+    $('.ldl-black .alertinfo .alertcrawl').text(weatherInfo.bulletin.crawlAlert.alert.description);
     $('.ldl-black .alertinfo').fadeIn(0);
     $('.ldl-black .alertinfo .alertcrawl').marquee({speed: 185, pauseOnHover: false}).on('finished', () =>{
         if(!inSettings && warningSettings[weatherInfo.bulletin.crawlAlert.alert.name].severe) audioPlayer.playSevere(weatherInfo.bulletin.crawlAlert.alert.name);
     })
 }
 function endAlertCrawl(){
+    const wasActive = alertActive;
     if(appearanceSettings.graphicsPackage >= 2009){
         $('.ldl-blue').fadeIn(0);
         $('.ldl-black').fadeOut(0);
     }
-    $('.ldl-black .alertinfo .alertcrawl').marquee('destroy');
+    $('.ldl-black .alertinfo .alertcrawl').off('finished').marquee('destroy');
     $('.ldl-black .alertinfo .alertcrawl').text('');
     $('.ldl-black .alertinfo .name').text('');
     $('.ldl-black .alertinfo').fadeOut(0);
@@ -175,6 +205,7 @@ function endAlertCrawl(){
     $('.ldl-black .time').css({
         "color": ""
     });
+    if (wasActive && !inSettings) startLoops();
 }
 
 async function preloadImages(){
@@ -191,18 +222,18 @@ function blueLDL(){
     $(".ldl-blue .template").css('animation', 'blueLDLInit 0.75s linear forwards');
     $(".ldl-blue .temptab").css('animation', 'tempTabInit 0.17s linear forwards');
     $(".ldl-blue .time").css('animation', 'timeTabInit 0.33s linear forwards');
-    setTimeout(() => {
+    scheduleLDL(() => {
         $(".ldl-blue .time-padding").fadeIn(0);
         $(".ldl-blue .crawl-tab").fadeIn(0);
         $(".ldl-blue .top-bar").fadeIn(0);
         $(".ldl-blue .crawl-tab").css('animation', 'tabCapInit 0.43s linear forwards');
         $(".ldl-blue .top-bar").css('animation', 'topBarInit 0.43s linear forwards');
     }, 233);
-    setTimeout(() => {
+    scheduleLDL(() => {
         addTabs();
     }, 1000);
     if(appearanceSettings.ldlType == "both"){
-        setTimeout(() => {
+        scheduleLDL(() => {
             $(".ldl-blue .crawl .box").css('animation', 'crawlInit 0.15s linear forwards');
             crawlIndex = Math.floor(Math.random() * appearanceSettings.marqueeAd.length);
             adCrawlBlue(crawlIndex);
@@ -212,9 +243,9 @@ function blueLDL(){
 
 function addTabs(){
     if(appearanceSettings.ldlType == "observations"){
-        setTimeout(() => {
+        scheduleLDL(() => {
             $(".ldl-blue .upnext-tabs .upnext-now").animate({'left': '0px'}, 133, 'linear', function(){
-                setTimeout(() => {
+                scheduleLDL(() => {
                     $(".ldl-blue .flare").css('animation', 'flare 0.5s linear forwards');
                     obsInterval = blueLDLObs();
                 }, 500);
@@ -224,7 +255,7 @@ function addTabs(){
         $(".ldl-blue .upnext-tabs .upnext-crawl").css('z-index', 10);
         $(".ldl-blue .upnext-tabs .upnext-now").css('opacity', '0.5');
         $(".ldl-blue .upnext-tabs .upnext-crawl").animate({'left': '-55.5px'}, 133, 'linear', function(){
-            setTimeout(() => {
+            scheduleLDL(() => {
                 $(".ldl-blue .upnext-tabs .upnext-now").css('animation', 'nowTabCrawlInit 0.2s linear forwards');
             }, 250);
         });
@@ -238,7 +269,7 @@ function adCrawlBlue(idx){
         $('.ldl-blue .crawl .scroll').marquee('destroy');
         $(".ldl-blue .crawl .box").css('animation', 'crawlDestroy 0.15s linear forwards');
         $(".ldl-blue .upnext-tabs .upnext-crawl").fadeOut(133, 'linear')
-        setTimeout(() => {
+        scheduleLDL(() => {
             $(".ldl-blue .upnext-tabs .upnext-now").css({'animation': '', 'left': '90px'});
             $(".ldl-blue .upnext-tabs .upnext-now").animate({'left': '0px'}, 150, 'linear', function(){
                 $(".ldl-blue .upnext-tabs .upnext-now").css({'opacity': 1, 'z-index': 10});
@@ -256,7 +287,7 @@ function blueLDLObs(){
             $(".ldl-blue .observations .city-name").fadeIn(0);
             $(".ldl-blue .observations .city-name").text("Local weather ID: " + locWeatherID);
             $(".ldl-blue .observations .city-name").animate({'margin-top': '4px'}, 333, 'linear');
-            setTimeout(() => {
+            scheduleLDL(() => {
                 $(".ldl-blue .observations .city-name").fadeOut(333, 'linear', function(){
                     $(".ldl-blue .observations .city-name").css('margin-top', '-60px');
                 })
@@ -272,7 +303,7 @@ function blueLDLObs(){
             $(".ldl-blue .observations .tempobs").animate({'margin-top': '7px'}, 333, 'linear');
             $(".ldl-blue .observations .icon").animate({'margin-top': '5px'}, 333, 'linear');
             getIcon($(".ldl-blue .observations .icon"), weatherInfo.currentConditions.icon, 'ldl', undefined);
-            setTimeout(() => {
+            scheduleLDL(() => {
                 $(".ldl-blue .observations .icon").fadeOut(333, 'linear');
                 $(".ldl-blue .observations .tempobs").fadeOut(333, 'linear', function(){
                     $(".ldl-blue .observations .tempobs").css('margin-top', '-60px');
@@ -284,7 +315,7 @@ function blueLDLObs(){
             $(".ldl-blue .observations .wind").fadeIn(0);
             $(".ldl-blue .wind .info").text(weatherInfo.currentConditions.wind);
             $(".ldl-blue .observations .wind").animate({'margin-top': '0px'}, 333, 'linear');
-            setTimeout(() => {
+            scheduleLDL(() => {
                 $(".ldl-blue .observations .wind").fadeOut(333, 'linear', function(){
                     $(".ldl-blue .observations .wind").css('margin-top', '-60px');
                 })
@@ -297,7 +328,7 @@ function blueLDLObs(){
             $(".ldl-blue .observations .gusts").fadeIn(0);
             $(".ldl-blue .gusts .info").html(`${weatherInfo.currentConditions.gusts}<span>MPH</span>`);
             $(".ldl-blue .observations .gusts").animate({'margin-top': '0px'}, 333, 'linear');
-            setTimeout(() => {
+            scheduleLDL(() => {
                 $(".ldl-blue .observations .gusts").fadeOut(333, 'linear', function(){
                     $(".ldl-blue .observations .gusts").css('margin-top', '-60px');
                 })
@@ -307,7 +338,7 @@ function blueLDLObs(){
             $(".ldl-blue .observations .humidity").fadeIn(0);
             $(".ldl-blue .humidity .info").html(`${weatherInfo.currentConditions.humidity.replace("%","")}<span>%</span>`);
             $(".ldl-blue .observations .humidity").animate({'margin-top': '0px'}, 333, 'linear');
-            setTimeout(() => {
+            scheduleLDL(() => {
                 $(".ldl-blue .observations .humidity").fadeOut(333, 'linear', function(){
                     $(".ldl-blue .observations .humidity").css('margin-top', '-60px');
                 })
@@ -318,7 +349,7 @@ function blueLDLObs(){
             $(".ldl-blue .feelslike .obsheader").html(weatherInfo.currentConditions.feelslike.type.toUpperCase() + ":");
             $(".ldl-blue .feelslike .info").html(`${weatherInfo.currentConditions.feelslike.val}<span class="degree">°</span>`);
             $(".ldl-blue .observations .feelslike").animate({'margin-top': '0px'}, 333, 'linear');
-            setTimeout(() => {
+            scheduleLDL(() => {
                 $(".ldl-blue .observations .feelslike").fadeOut(333, 'linear', function(){
                     $(".ldl-blue .observations .feelslike").css('margin-top', '-60px');
                 })
@@ -328,7 +359,7 @@ function blueLDLObs(){
             $(".ldl-blue .observations .dewpt").fadeIn(0);
             $(".ldl-blue .dewpt .info").html(`${weatherInfo.currentConditions.dewpoint}<span class="degree">°</span>`);
             $(".ldl-blue .observations .dewpt").animate({'margin-top': '0px'}, 333, 'linear');
-            setTimeout(() => {
+            scheduleLDL(() => {
                 $(".ldl-blue .observations .dewpt").fadeOut(333, 'linear', function(){
                     $(".ldl-blue .observations .dewpt").css('margin-top', '-60px');
                 })
@@ -338,7 +369,7 @@ function blueLDLObs(){
             $(".ldl-blue .observations .pressure").fadeIn(0);
             $(".ldl-blue .pressure .info").html(`${weatherInfo.currentConditions.pressure.val}`);
             $(".ldl-blue .observations .pressure").animate({'margin-top': '0px'}, 333, 'linear');
-            setTimeout(() => {
+            scheduleLDL(() => {
                 $(".ldl-blue .observations .pressure").fadeOut(333, 'linear', function(){
                     $(".ldl-blue .observations .pressure").css('margin-top', '-60px');
                 })
@@ -348,7 +379,7 @@ function blueLDLObs(){
             $(".ldl-blue .observations .visibility").fadeIn(0);
             $(".ldl-blue .visibility .info").html(`${weatherInfo.currentConditions.visibility}<span>MI</span>`);
             $(".ldl-blue .observations .visibility").animate({'margin-top': '3px'}, 333, 'linear');
-            setTimeout(() => {
+            scheduleLDL(() => {
                 if(weatherInfo.monthlyPrecip == "0.00"){
                     $(".ldl-blue .observations .city-name").fadeOut(333, 'linear', function(){
                         $(".ldl-blue .observations .city-name").css('margin-top', '-60px');
@@ -364,7 +395,7 @@ function blueLDLObs(){
             $(".ldl-blue .precip .obsheader").html(`${today.toLocaleDateString("en-US", {month: 'short'}).toUpperCase()} PRECIP:`);
             $(".ldl-blue .precip .info").html(`${weatherInfo.monthlyPrecip}<span>IN</span>`);
             $(".ldl-blue .observations .precip").animate({'margin-top': '0px'}, 333, 'linear');
-            setTimeout(() => {
+            scheduleLDL(() => {
                 $(".ldl-blue .observations .city-name").fadeOut(333, 'linear');
                 $(".ldl-blue .observations .precip").fadeOut(333, 'linear', function(){
                     $(".ldl-blue .observations .precip").css('margin-top', '-60px');
@@ -382,7 +413,7 @@ function blueLDLObs(){
     currentProgram();
     ldlIndex = ldlIndex + 1;
 
-    setTimeout(() => {
+    scheduleLDL(() => {
         obsInterval = blueLDLObs()
     }, 4000);
 }
